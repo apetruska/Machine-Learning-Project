@@ -1,0 +1,56 @@
+---
+title: "Practical Machine Learning Project"
+output: html_document
+---
+
+###Summary
+This analysis will use the data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. This analysis will predict in which manner the exercise was performed. This parameter is contained in the "classe" variable in the datasets. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+###Data
+The data has already been split into a training and test set from the source.
+
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+```{r data}
+traindata <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", na.strings = c("#DIV/0!","NA"," "))
+testdata <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",na.strings = c("#DIV/0!","NA"," "))
+```
+
+There are a number of columns that are over 95% NA or missing values, these will be removed from the datasets. Also, the first six informational rows i.e. name, time will be removed since these are not variables related to the exercise type.
+```{r}
+traindatasub <- traindata[, colSums(is.na(traindata)) < nrow(traindata) * 0.9]
+traindatasub <- traindatasub[,-c(1:6)]
+```
+
+The test data does not contain the clase variable to check for accuracy of the model so the training data set will be split into a training and a validation set.
+```{r}
+set.seed(1109)
+library(caret)
+inTrain <- createDataPartition(traindatasub$classe, p = 0.6)[[1]]
+training <- traindatasub[-inTrain,]
+validation <- traindatasub[ inTrain,]
+```
+
+###Model fitting
+Various models will be tried and tested for accuracy. These models will be tested against the 40% reserved from the training set to determine the out of sample accuracy.
+
+```{r models}
+library(randomForest)
+rffit <- randomForest(classe~.,data = training)
+rfresult <- predict(rffit, validation)
+confusionMatrix(rfresult, validation$classe)
+```
+
+The accuracy of the random forest model is 99.17%. Since this is sufficient for our purposes, this model will be utilized and no other models will be tested.
+
+###Test set prediction
+The model will be used to predict the class of exercise for the test set.
+```{r test}
+testresults <- predict(rffit, testdata)
+```
+
+
